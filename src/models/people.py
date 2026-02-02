@@ -34,14 +34,14 @@ class FilmSummary(BaseModel):
 class PeopleResponse(BaseModel):
     id: int
     name: str
-    height: Optional[int] = Field(None, description="Altura em centimetros")
-    mass: Optional[float] = Field(None, description="Massa em kilogramas")
-    appearance: Dict[str, str] = Field(description="Caracteristicas fisicas")
+    height: Optional[int] = Field(None, description="Altura em centímetros")
+    mass: Optional[float] = Field(None, description="Massa em quilogramas")
+    appearance: Dict[str, str] = Field(description="Caracteristicas físicas")
     birth_year: str
     gender: str
     homeworld: PlanetSummary
-    films: Optional[List[FilmSummary]] = Field(None, description="Aparicoes em filmes")
-    statistics: Dict[str, int] = Field(description="Estatisticas")
+    films: Optional[List[FilmSummary]] = Field(None, description="Aparições em filmes")
+    statistics: Dict[str, int] = Field(description="Estatísticas")
 
     @field_validator('height', mode='before')
     def parse_height(cls, v):
