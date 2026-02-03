@@ -14,24 +14,54 @@ anyio==4.12.1
     # via starlette
 attrs==25.4.0
     # via aiohttp
+blinker==1.9.0
+    # via flask
 click==8.3.1
-    # via uvicorn
+    # via
+    #   flask
+    #   functions-framework
+    #   uvicorn
+cloudevents==1.12.0
+    # via functions-framework
+deprecation==2.1.0
+    # via cloudevents
 fastapi==0.128.0
     # via powerofdata-swapi (pyproject.toml)
+flask==3.1.2
+    # via functions-framework
 frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
+functions-framework==3.10.0
+    # via powerofdata-swapi (pyproject.toml)
+gunicorn==25.0.1
+    # via
+    #   functions-framework
+    #   uvicorn-worker
 h11==0.16.0
     # via uvicorn
 idna==3.11
     # via
     #   anyio
     #   yarl
+itsdangerous==2.2.0
+    # via flask
+jinja2==3.1.6
+    # via flask
+markupsafe==3.0.3
+    # via
+    #   flask
+    #   jinja2
+    #   werkzeug
 multidict==6.7.1
     # via
     #   aiohttp
     #   yarl
+packaging==26.0
+    # via
+    #   deprecation
+    #   gunicorn
 propcache==0.4.1
     # via
     #   aiohttp
@@ -43,7 +73,9 @@ pydantic==2.12.5
 pydantic-core==2.41.5
     # via pydantic
 starlette==0.50.0
-    # via fastapi
+    # via
+    #   fastapi
+    #   functions-framework
 typing-extensions==4.15.0
     # via
     #   aiosignal
@@ -56,6 +88,17 @@ typing-extensions==4.15.0
 typing-inspection==0.4.2
     # via pydantic
 uvicorn==0.40.0
-    # via powerofdata-swapi (pyproject.toml)
+    # via
+    #   powerofdata-swapi (pyproject.toml)
+    #   functions-framework
+    #   uvicorn-worker
+uvicorn-worker==0.4.0
+    # via functions-framework
+watchdog==6.0.0
+    # via functions-framework
+werkzeug==3.1.5
+    # via
+    #   flask
+    #   functions-framework
 yarl==1.22.0
     # via aiohttp
