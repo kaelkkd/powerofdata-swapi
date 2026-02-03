@@ -6,7 +6,7 @@ on:
   workflow_dispatch:  # Permite trigger manual
 
 env:
-  GCP_REGION: ${{ secrets.GCP_REGION }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
   FUNCTION_NAME: star-wars-api-dev
 
 jobs:
@@ -26,22 +26,22 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-        service_account: ${{ secrets.GCP_SA_EMAIL }}
+        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+        service_account: ${{ vars.GCP_SA_EMAIL }}
         token_format: 'access_token'
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        project_id: ${{ vars.GCP_PROJECT_ID }}
     
     # ========= VALIDAÇÕES PRÉ-DEPLOY =========
     - name: Validate configuration
       run: |
-        echo "Project ID: ${{ secrets.GCP_PROJECT_ID }}"
-        echo "Region: ${{ secrets.GCP_REGION }}"
+        echo "Project ID: ${{ vars.GCP_PROJECT_ID }}"
+        echo "Region: ${{ vars.GCP_REGION }}"
         echo "Function: ${{ env.FUNCTION_NAME }}"
-        echo "SA Email: ${{ secrets.GCP_SA_EMAIL }}"
+        echo "SA Email: ${{ vars.GCP_SA_EMAIL }}"
         
         # Verificar autenticação
         gcloud auth list
@@ -53,7 +53,7 @@ jobs:
         gcloud functions deploy ${{ env.FUNCTION_NAME }} \
           --gen2 \
           --runtime=python311 \
-          --region=${{ secrets.GCP_REGION }} \
+          --region=${{ vars.GCP_REGION }} \
           --source=. \
           --entry-point=star_wars_api \
           --trigger-http \
@@ -63,18 +63,18 @@ jobs:
           --max-instances=10 \
           --min-instances=0 \
           --set-env-vars="ENVIRONMENT=development,LOG_LEVEL=DEBUG" \
-          --service-account=${{ secrets.GCP_SA_EMAIL }} \
-          --project=${{ secrets.GCP_PROJECT_ID }}
+          --service-account=${{ vars.GCP_SA_EMAIL }} \
+          --project=${{ vars.GCP_PROJECT_ID }}
     
     # ========= OBTER URL E TESTAR =========
     - name: Get Function URL
       id: function-url
       run: |
         FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
-          --region=${{ secrets.GCP_REGION }} \
+          --region=${{ vars.GCP_REGION }} \
           --gen2 \
           --format="value(serviceConfig.uri)" \
-          --project=${{ secrets.GCP_PROJECT_ID }})
+          --project=${{ vars.GCP_PROJECT_ID }})
         
         echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
         echo " Function URL: $FUNCTION_URL"
