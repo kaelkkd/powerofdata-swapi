@@ -1,3 +1,4 @@
+import aiohttp
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from src.services import (
@@ -28,8 +29,48 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Case técnico com SWAPI",
-    lifespan=lifespan
+    lifespan=lifespan,
+    version="0.1.0"
 )
+
+##Health para CI/CD
+@app.get("/health", tags=["System"])
+async def health_check():
+    swapi_status = "healthy"
+    
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5.0)) as client:
+            async with client.get("https://swapi.dev/api/") as response:
+                if response.status != 200:
+                    swapi_status = "degraded"
+    except Exception:
+        swapi_status = "unhealthy"
+    
+    return {
+        "status": "healthy" if swapi_status == "healthy" else "degraded",
+        "service": "star-wars-api",
+        "version": "0.1.0",
+        "dependencies": {
+            "swapi": swapi_status
+        }
+    }
+
+##Roor
+@app.get("/", tags=["System"])
+async def root():
+    return {
+        "message": "Star Wars API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "health": "/health",
+        "endpoints": {
+            "characters": "/people/{id}",
+            "planets": "/planets/{id}",
+            "films": "/films/{id}",
+            "starships": "/starships/{id}",
+            "vehicles": "vehicles/{id}"
+        }
+    }
 
 @app.get(
     "/people/{people_id}",
