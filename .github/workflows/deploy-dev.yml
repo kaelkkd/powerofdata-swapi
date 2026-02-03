@@ -1,0 +1,132 @@
+name: Deploy para DEV
+
+on:
+  push:
+    branches: [ dev ]
+  workflow_dispatch:  # Permite trigger manual
+
+env:
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  FUNCTION_NAME: star-wars-api-dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: development
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # ========= AUTENTICAÇÃO COM WIF =========
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+        service_account: ${{ secrets.GCP_SA_EMAIL }}
+        token_format: 'access_token'
+    
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    # ========= VALIDAÇÕES PRÉ-DEPLOY =========
+    - name: Validate configuration
+      run: |
+        echo "Project ID: ${{ secrets.GCP_PROJECT_ID }}"
+        echo "Region: ${{ secrets.GCP_REGION }}"
+        echo "Function: ${{ env.FUNCTION_NAME }}"
+        echo "SA Email: ${{ secrets.GCP_SA_EMAIL }}"
+        
+        # Verificar autenticação
+        gcloud auth list
+        gcloud config list
+    
+    # ========= DEPLOY CLOUD FUNCTION =========
+    - name: Deploy Cloud Function
+      run: |
+        gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ secrets.GCP_REGION }} \
+          --source=. \
+          --entry-point=star_wars_api \
+          --trigger-http \
+          --allow-unauthenticated \
+          --memory=512MB \
+          --timeout=60s \
+          --max-instances=10 \
+          --min-instances=0 \
+          --set-env-vars="ENVIRONMENT=development,LOG_LEVEL=DEBUG" \
+          --service-account=${{ secrets.GCP_SA_EMAIL }} \
+          --project=${{ secrets.GCP_PROJECT_ID }}
+    
+    # ========= OBTER URL E TESTAR =========
+    - name: Get Function URL
+      id: function-url
+      run: |
+        FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
+          --region=${{ secrets.GCP_REGION }} \
+          --gen2 \
+          --format="value(serviceConfig.uri)" \
+          --project=${{ secrets.GCP_PROJECT_ID }})
+        
+        echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
+        echo " Function URL: $FUNCTION_URL"
+    
+    - name: Wait for function to be ready
+      run: |
+        echo "Waiting 15 seconds for function to initialize..."
+        sleep 15
+    
+    - name: Health check
+      run: |
+        echo "Testing health endpoint..."
+        HEALTH_URL="${{ steps.function-url.outputs.url }}/health"
+        
+        for i in {1..5}; do
+          if curl -f -s "$HEALTH_URL" > /dev/null; then
+            echo "✅ Health check passed!"
+            curl -s "$HEALTH_URL" | jq .
+            exit 0
+          fi
+          echo "Attempt $i failed, retrying..."
+          sleep 5
+        done
+        
+        echo "❌ Health check failed after 5 attempts"
+        exit 1
+    
+    - name: Test API documentation
+      run: |
+        DOCS_URL="${{ steps.function-url.outputs.url }}/docs"
+        echo "Testing docs endpoint: $DOCS_URL"
+        
+        if curl -f -s "$DOCS_URL" > /dev/null; then
+          echo "Docs endpoint accessible!"
+        else
+          echo "Docs endpoint not accessible (may be expected)"
+        fi
+    
+    # ========= SUMMARY =========
+    - name: Deployment summary
+      run: |
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "DEPLOYMENT SUCCESSFUL - DEV ENVIRONMENT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo " Function URL:"
+        echo "   ${{ steps.function-url.outputs.url }}"
+        echo ""
+        echo " API Documentation:"
+        echo "   ${{ steps.function-url.outputs.url }}/docs"
+        echo ""
+        echo " Health Check:"
+        echo "   ${{ steps.function-url.outputs.url }}/health"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
