@@ -91,3 +91,16 @@ class VehicleResponse(BaseModel):
             return int(v)
         except ValueError:
             return None
+
+class VehicleListItem(BaseModel):
+    id: int
+    name: str
+    model: str
+    vehicle_class: str
+    manufacturer: str
+
+class VehicleListResponse(BaseModel):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: List[VehicleListItem]

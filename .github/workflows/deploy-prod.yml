@@ -1,0 +1,199 @@
+name: Deploy para PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (v1.0.0)'
+        required: true
+        type: string
+      deploy_gateway:
+        description: 'Deploy API Gateway?'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  FUNCTION_NAME: star-wars-api-prod
+  GATEWAY_NAME: star-wars-gateway
+
+jobs:
+  deploy-function:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.version }}
+    
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+        service_account: ${{ vars.GCP_SA_EMAIL }}
+    
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    
+    - name: Deploy Cloud Function
+      run: |
+        gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+          --gen2 \
+          --runtime=python311 \
+          --region=${{ vars.GCP_REGION }} \
+          --source=. \
+          --entry-point=star_wars_api \
+          --trigger-http \
+          --allow-unauthenticated \
+          --memory=1024MB \
+          --timeout=60s \
+          --max-instances=100 \
+          --min-instances=1 \
+          --set-env-vars="ENVIRONMENT=production,LOG_LEVEL=INFO" \
+          --service-account=${{ vars.GCP_SA_EMAIL }} \
+          --project=${{ vars.GCP_PROJECT_ID }}
+    
+    - name: Get Function URL
+      id: function-url
+      run: |
+        FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
+          --region=${{ vars.GCP_REGION }} \
+          --gen2 \
+          --format="value(serviceConfig.uri)" \
+          --project=${{ vars.GCP_PROJECT_ID }})
+        
+        echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
+    
+    - name: Health check
+      run: |
+        sleep 20
+        curl -f "${{ steps.function-url.outputs.url }}/health" || exit 1
+        echo "✅ Production function is healthy!"
+    
+    outputs:
+      function_url: ${{ steps.function-url.outputs.url }}
+
+  deploy-gateway:
+    needs: deploy-function
+    if: github.event.inputs.deploy_gateway == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+        service_account: ${{ vars.GCP_SA_EMAIL }}
+    
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+    
+    - name: Check if API exists
+      id: check-api
+      run: |
+        if gcloud api-gateway apis describe ${{ env.GATEWAY_NAME }} \
+            --project=${{ vars.GCP_PROJECT_ID }} 2>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create API (if not exists)
+      if: steps.check-api.outputs.exists == 'false'
+      run: |
+        gcloud api-gateway apis create ${{ env.GATEWAY_NAME }} \
+          --project=${{ vars.GCP_PROJECT_ID }}
+    
+    - name: Update OpenAPI spec with function URL
+      run: |
+        sed -i "s|FUNCTION_URL_PLACEHOLDER|${{ needs.deploy-function.outputs.function_url }}|g" \
+          infrastructure/api-gateway/openapi-spec.yaml
+    
+    - name: Deploy API Config
+      run: |
+        CONFIG_NAME="config-$(date +%Y%m%d-%H%M%S)"
+        
+        gcloud api-gateway api-configs create $CONFIG_NAME \
+          --api=${{ env.GATEWAY_NAME }} \
+          --openapi-spec=infrastructure/api-gateway/openapi-spec.yaml \
+          --project=${{ vars.GCP_PROJECT_ID }} \
+          --backend-auth-service-account=${{ vars.GCP_SA_EMAIL }}
+        
+        echo "config_name=$CONFIG_NAME" >> $GITHUB_ENV
+    
+    - name: Check if Gateway exists
+      id: check-gateway
+      run: |
+        if gcloud api-gateway gateways describe ${{ env.GATEWAY_NAME }} \
+            --location=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }} 2>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create or Update Gateway
+      run: |
+        if [ "${{ steps.check-gateway.outputs.exists }}" == "true" ]; then
+          echo "Updating existing gateway..."
+          gcloud api-gateway gateways update ${{ env.GATEWAY_NAME }} \
+            --api=${{ env.GATEWAY_NAME }} \
+            --api-config=${{ env.config_name }} \
+            --location=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }}
+        else
+          echo "Creating new gateway..."
+          gcloud api-gateway gateways create ${{ env.GATEWAY_NAME }} \
+            --api=${{ env.GATEWAY_NAME }} \
+            --api-config=${{ env.config_name }} \
+            --location=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }}
+        fi
+    
+    - name: Get Gateway URL
+      id: gateway-url
+      run: |
+        GATEWAY_URL=$(gcloud api-gateway gateways describe ${{ env.GATEWAY_NAME }} \
+          --location=${{ vars.GCP_REGION }} \
+          --project=${{ vars.GCP_PROJECT_ID }} \
+          --format="value(defaultHostname)")
+        
+        echo "url=https://$GATEWAY_URL" >> $GITHUB_OUTPUT
+    
+    - name: Production summary
+      run: |
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "PRODUCTION DEPLOYMENT SUCCESSFUL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Version: ${{ github.event.inputs.version }}"
+        echo ""
+        echo "API Gateway URL:"
+        echo "   ${{ steps.gateway-url.outputs.url }}"
+        echo ""
+        echo "Direct Function URL:"
+        echo "   ${{ needs.deploy-function.outputs.function_url }}"
+        echo ""
+        echo "Documentation:"
+        echo "   ${{ steps.gateway-url.outputs.url }}/docs"
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

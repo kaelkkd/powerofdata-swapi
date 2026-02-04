@@ -1,5 +1,5 @@
 import asyncio
-from src.models.starship import Starship, StarshipResponse, PeopleSummary, FilmSummary
+from src.models.starship import Starship, StarshipResponse, StarshipListResponse, StarshipListItem, PeopleSummary, FilmSummary
 from src.services.swapi_client import SWAPIClient
 
 class StarshipService:
@@ -49,4 +49,25 @@ class StarshipService:
                 "total_pilots": len(pilots_data),
                 "total_films": len(films_data)
             }
+        )
+
+    async def get_starships_list(self, page: int = 1) -> StarshipListResponse:
+        raw_data = await self.swapi_client.get("/starships/", params={"page": page})
+        results = []
+
+        for starship_data in raw_data['results']:
+            starship = Starship(**starship_data)
+            results.append(StarshipListItem(
+                id=self._extract_id(starship.url),
+                name=starship.name,
+                model=starship.model,
+                starship_class=starship.starship_class,
+                manufacturer=starship.manufacturer
+            ))
+        
+        return StarshipListResponse(
+            count=raw_data['count'],
+            next=raw_data.get('next'),
+            previous=raw_data.get('previous'),
+            results=results
         )

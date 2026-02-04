@@ -1,5 +1,5 @@
 import asyncio
-from src.models.specie import Specie, SpecieResponse, PlanetSummary, PeopleSummary
+from src.models.specie import Specie, SpecieResponse, SpecieListResponse, SpecieListItem, PlanetSummary, PeopleSummary
 from src.services.swapi_client import SWAPIClient
 
 class SpecieService:
@@ -42,4 +42,25 @@ class SpecieService:
                 "total_people": len(people_data),
                 "appearance_in_movies": len(specie.films)
             }
+        )
+
+    async def get_species_list(self, page: int = 1) -> SpecieListResponse:
+        raw_data = await self.swapi_client.get("/species/", params={"page": page})
+        results = []
+
+        for specie_data in raw_data['results']:
+            specie = Specie(**specie_data)
+            results.append(SpecieListItem(
+                id=self._extract_id(specie.url),
+                name=specie.name,
+                classification=specie.classification,
+                designation=specie.designation,
+                language=specie.language
+            ))
+        
+        return SpecieListResponse(
+            count=raw_data['count'],
+            next=raw_data.get('next'),
+            previous=raw_data.get('previous'),
+            results=results
         )

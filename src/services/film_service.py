@@ -1,5 +1,5 @@
 import asyncio
-from src.models.film import Film, FilmResponse, PlanetSummary
+from src.models.film import Film, FilmResponse, FilmListResponse, FilmListItem, PlanetSummary
 from src.services.swapi_client import SWAPIClient
 
 class FilmService:
@@ -35,4 +35,25 @@ class FilmService:
                 "total_vehicles": len(film.vehicles),
                 "total_starships": len(film.starships)
             }
+        )
+
+    async def get_films_list(self, page: int = 1) -> FilmListResponse:
+        raw_data = await self.swapi_client.get("/films/", params={"page": page})
+        results = []
+
+        for film_data in raw_data['results']:
+            film = Film(**film_data)
+            results.append(FilmListItem(
+                id=self._extract_id(film.url),
+                title=film.title,
+                episode_id=film.episode_id,
+                director=film.director,
+                release_date=film.release_date
+            ))
+        
+        return FilmListResponse(
+            count=raw_data['count'],
+            next=raw_data.get('next'),
+            previous=raw_data.get('previous'),
+            results=results
         )

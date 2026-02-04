@@ -1,5 +1,5 @@
 import asyncio
-from src.models.planet import Planet, PlanetResponse, PeopleSummary, FilmSummary
+from src.models.planet import Planet, PlanetResponse, PlanetListResponse, PlanetListItem, PeopleSummary, FilmSummary
 from src.services.swapi_client import SWAPIClient
 
 class PlanetService:
@@ -44,4 +44,25 @@ class PlanetService:
                 "total_residents": len(residents_data),
                 "total_films": len(films_data)
             }
+        )
+
+    async def get_planets_list(self, page: int = 1) -> PlanetListResponse:
+        raw_data = await self.swapi_client.get("/planets/", params={"page": page})
+        results = []
+
+        for planet_data in raw_data['results']:
+            planet = Planet(**planet_data)
+            results.append(PlanetListItem(
+                id=self._extract_id(planet.url),
+                name=planet.name,
+                climate=planet.climate,
+                terrain=planet.terrain,
+                population=planet.population
+            ))
+        
+        return PlanetListResponse(
+            count=raw_data['count'],
+            next=raw_data.get('next'),
+            previous=raw_data.get('previous'),
+            results=results
         )

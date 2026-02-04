@@ -11,7 +11,7 @@ class Specie(BaseModel):
     hair_colors: str
     skin_colors: str
     language: str
-    homeworld: str
+    homeworld: Optional[str] = None
     people: List[str]
     films: List[str]
     url: str
@@ -60,3 +60,16 @@ class SpecieResponse(BaseModel):
             return int(v)
         except ValueError:
             return None
+
+class SpecieListItem(BaseModel):
+    id: int
+    name: str
+    classification: str
+    designation: str
+    language: Optional[str] = Field(None, description="Idioma falado")
+
+class SpecieListResponse(BaseModel):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: List[SpecieListItem]

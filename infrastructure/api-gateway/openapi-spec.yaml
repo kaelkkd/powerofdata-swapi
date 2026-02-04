@@ -1,0 +1,218 @@
+swagger: '2.0'
+info:
+  title: Star Wars API Gateway
+  description: API Gateway para o Case Técnico SWAPI
+  version: 0.1.0
+schemes:
+  - https
+produces:
+  - application/json
+
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      operationId: getRoot
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/
+      responses:
+        '200':
+          description: OK
+
+  /health:
+    get:
+      summary: Health check para CI/CD
+      operationId: healthCheck
+      tags:
+        - System
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/health
+      responses:
+        '200':
+          description: OK
+
+  /people:
+    get:
+      summary: Lista de personagens
+      operationId: getPeopleList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/people
+      responses:
+        '200':
+          description: OK
+
+  /people/{people_id}:
+    get:
+      summary: Busca por personagem
+      operationId: getPerson
+      parameters:
+        - name: people_id
+          in: path
+          required: true
+          type: integer
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/people/{people_id}
+      responses:
+        '200':
+          description: OK
+
+  /films:
+    get:
+      summary: Lista de filmes
+      operationId: getFilmsList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/films
+      responses:
+        '200':
+          description: OK
+
+  /films/{film_id}:
+    get:
+      summary: Busca por filme
+      operationId: getFilm
+      parameters:
+        - name: film_id
+          in: path
+          required: true
+          type: integer
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/films/{film_id}
+      responses:
+        '200':
+          description: OK
+
+  /planets:
+    get:
+      summary: Lista de planetas
+      operationId: getPlanetsList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/planets
+      responses:
+        '200':
+          description: OK
+
+  /planets/{planet_id}:
+    get:
+      summary: Busca por planeta
+      operationId: getPlanet
+      parameters:
+        - name: planet_id
+          in: path
+          required: true
+          type: integer
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/planets/{planet_id}
+      responses:
+        '200':
+          description: OK
+
+  /species:
+    get:
+      summary: Lista de espécies
+      operationId: getSpeciesList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/species
+      responses:
+        '200':
+          description: OK
+
+  /species/{specie_id}:
+    get:
+      summary: Busca por espécie
+      operationId: getSpecie
+      parameters:
+        - name: specie_id
+          in: path
+          required: true
+          type: integer
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/species/{specie_id}
+      responses:
+        '200':
+          description: OK
+
+  /starships:
+    get:
+      summary: Lista de naves
+      operationId: getStarshipsList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/starships
+      responses:
+        '200':
+          description: OK
+
+  /starships/{starship_id}:
+    get:
+      summary: Busca por nave
+      operationId: getStarship
+      parameters:
+        - name: starship_id
+          in: path
+          required: true
+          type: integer
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/starships/{starship_id}
+      responses:
+        '200':
+          description: OK
+
+  /vehicles:
+    get:
+      summary: Lista de veículos
+      operationId: getVehiclesList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/vehicles
+      responses:
+        '200':
+          description: OK
+
+  /vehicles/{vehicle_id}:
+    get:
+      summary: Busca por veículo
+      operationId: getVehicle
+      parameters:
+        - name: vehicle_id
+          in: path
+          required: true
+          type: integer
+      x-google-backend:
+        address: FUNCTION_URL_PLACEHOLDER/vehicles/{vehicle_id}
+      responses:
+        '200':
+          description: OK
