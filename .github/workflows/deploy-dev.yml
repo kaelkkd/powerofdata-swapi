@@ -59,7 +59,7 @@ jobs:
           --trigger-http \
           --allow-unauthenticated \
           --memory=256MB \
-          --cpu=0.16
+          --cpu=0.16 \
           --timeout=60s \
           --max-instances=4 \
           --min-instances=0 \
