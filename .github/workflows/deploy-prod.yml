@@ -14,7 +14,7 @@ on:
         default: true
 
 env:
-  GCP_REGION: ${{ secrets.GCP_REGION }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
   FUNCTION_NAME: star-wars-api-prod
   GATEWAY_NAME: star-wars-gateway
 
@@ -36,20 +36,20 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-        service_account: ${{ secrets.GCP_SA_EMAIL }}
+        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+        service_account: ${{ vars.GCP_SA_EMAIL }}
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        project_id: ${{ vars.GCP_PROJECT_ID }}
     
     - name: Deploy Cloud Function
       run: |
         gcloud functions deploy ${{ env.FUNCTION_NAME }} \
           --gen2 \
           --runtime=python311 \
-          --region=${{ secrets.GCP_REGION }} \
+          --region=${{ vars.GCP_REGION }} \
           --source=. \
           --entry-point=star_wars_api \
           --trigger-http \
@@ -59,17 +59,17 @@ jobs:
           --max-instances=100 \
           --min-instances=1 \
           --set-env-vars="ENVIRONMENT=production,LOG_LEVEL=INFO" \
-          --service-account=${{ secrets.GCP_SA_EMAIL }} \
-          --project=${{ secrets.GCP_PROJECT_ID }}
+          --service-account=${{ vars.GCP_SA_EMAIL }} \
+          --project=${{ vars.GCP_PROJECT_ID }}
     
     - name: Get Function URL
       id: function-url
       run: |
         FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
-          --region=${{ secrets.GCP_REGION }} \
+          --region=${{ vars.GCP_REGION }} \
           --gen2 \
           --format="value(serviceConfig.uri)" \
-          --project=${{ secrets.GCP_PROJECT_ID }})
+          --project=${{ vars.GCP_PROJECT_ID }})
         
         echo "url=$FUNCTION_URL" >> $GITHUB_OUTPUT
     
@@ -99,19 +99,19 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-        service_account: ${{ secrets.GCP_SA_EMAIL }}
+        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+        service_account: ${{ vars.GCP_SA_EMAIL }}
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        project_id: ${{ vars.GCP_PROJECT_ID }}
     
     - name: Check if API exists
       id: check-api
       run: |
         if gcloud api-gateway apis describe ${{ env.GATEWAY_NAME }} \
-            --project=${{ secrets.GCP_PROJECT_ID }} 2>/dev/null; then
+            --project=${{ vars.GCP_PROJECT_ID }} 2>/dev/null; then
           echo "exists=true" >> $GITHUB_OUTPUT
         else
           echo "exists=false" >> $GITHUB_OUTPUT
@@ -121,7 +121,7 @@ jobs:
       if: steps.check-api.outputs.exists == 'false'
       run: |
         gcloud api-gateway apis create ${{ env.GATEWAY_NAME }} \
-          --project=${{ secrets.GCP_PROJECT_ID }}
+          --project=${{ vars.GCP_PROJECT_ID }}
     
     - name: Update OpenAPI spec with function URL
       run: |
@@ -135,8 +135,8 @@ jobs:
         gcloud api-gateway api-configs create $CONFIG_NAME \
           --api=${{ env.GATEWAY_NAME }} \
           --openapi-spec=infrastructure/api-gateway/openapi-spec.yaml \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
-          --backend-auth-service-account=${{ secrets.GCP_SA_EMAIL }}
+          --project=${{ vars.GCP_PROJECT_ID }} \
+          --backend-auth-service-account=${{ vars.GCP_SA_EMAIL }}
         
         echo "config_name=$CONFIG_NAME" >> $GITHUB_ENV
     
@@ -144,8 +144,8 @@ jobs:
       id: check-gateway
       run: |
         if gcloud api-gateway gateways describe ${{ env.GATEWAY_NAME }} \
-            --location=${{ secrets.GCP_REGION }} \
-            --project=${{ secrets.GCP_PROJECT_ID }} 2>/dev/null; then
+            --location=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }} 2>/dev/null; then
           echo "exists=true" >> $GITHUB_OUTPUT
         else
           echo "exists=false" >> $GITHUB_OUTPUT
@@ -158,23 +158,23 @@ jobs:
           gcloud api-gateway gateways update ${{ env.GATEWAY_NAME }} \
             --api=${{ env.GATEWAY_NAME }} \
             --api-config=${{ env.config_name }} \
-            --location=${{ secrets.GCP_REGION }} \
-            --project=${{ secrets.GCP_PROJECT_ID }}
+            --location=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }}
         else
           echo "Creating new gateway..."
           gcloud api-gateway gateways create ${{ env.GATEWAY_NAME }} \
             --api=${{ env.GATEWAY_NAME }} \
             --api-config=${{ env.config_name }} \
-            --location=${{ secrets.GCP_REGION }} \
-            --project=${{ secrets.GCP_PROJECT_ID }}
+            --location=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT_ID }}
         fi
     
     - name: Get Gateway URL
       id: gateway-url
       run: |
         GATEWAY_URL=$(gcloud api-gateway gateways describe ${{ env.GATEWAY_NAME }} \
-          --location=${{ secrets.GCP_REGION }} \
-          --project=${{ secrets.GCP_PROJECT_ID }} \
+          --location=${{ vars.GCP_REGION }} \
+          --project=${{ vars.GCP_PROJECT_ID }} \
           --format="value(defaultHostname)")
         
         echo "url=https://$GATEWAY_URL" >> $GITHUB_OUTPUT
