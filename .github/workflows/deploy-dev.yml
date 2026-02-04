@@ -58,9 +58,10 @@ jobs:
           --entry-point=star_wars_api \
           --trigger-http \
           --allow-unauthenticated \
-          --memory=512MB \
+          --memory=256MB \
+          --cpu=0.16
           --timeout=60s \
-          --max-instances=10 \
+          --max-instances=4 \
           --min-instances=0 \
           --set-env-vars="ENVIRONMENT=development,LOG_LEVEL=DEBUG" \
           --service-account=${{ vars.GCP_SA_EMAIL }} \

@@ -10,28 +10,22 @@ from src.services import (
     VehicleService,
 )
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    app.state.people_service = PeopleService()
-    app.state.film_service = FilmService()
-    app.state.planet_service = PlanetService()
-    app.state.specie_service = SpecieService()
-    app.state.starship_service = StarshipService()
-    app.state.vehicle_service = VehicleService()
-    
-    yield
-    
-    await app.state.people_service.swapi_client.close()
-    await app.state.film_service.swapi_client.close()
-    await app.state.film_service.swapi_client.close()
-    await app.state.specie_service.swapi_client.close()
-    await app.state.starship_service.swapi_client.close()
-
 app = FastAPI(
     title="Case técnico com SWAPI",
-    lifespan=lifespan,
-    version="0.1.0"
+    version="1.0.0"
 )
+
+async def get_state():
+    if not hasattr(app.state, "services_initialized"):
+        app.state.people_service = PeopleService()
+        app.state.film_service = FilmService()
+        app.state.planet_service = PlanetService()
+        app.state.specie_service = SpecieService()
+        app.state.starship_service = StarshipService()
+        app.state.vehicle_service = VehicleService()
+        app.state.services_initialized = True
+
+    return app.state
 
 ##Health para CI/CD
 @app.get("/health", tags=["System"])
@@ -60,7 +54,7 @@ async def health_check():
 async def root():
     return {
         "message": "Star Wars API",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "docs": "/docs",
         "health": "/health",
         "endpoints": {
@@ -99,6 +93,7 @@ async def root():
     response_description="Lista paginada de personagens"
 )
 async def get_people_list(page: int = 1):
+    state = await get_state()
     try:
         return await app.state.people_service.get_people_list(page)
     except Exception as e:
@@ -114,6 +109,7 @@ async def get_people_list(page: int = 1):
     response_description="Informações customizdas"
 )
 async def get_person(people_id: int):
+    state = await get_state()
     try:
         return await app.state.people_service.get_people_enriched(people_id)
     except Exception as e:
@@ -130,6 +126,7 @@ async def get_person(people_id: int):
     response_description="Lista paginada de filmes"
 )
 async def get_films_list(page: int = 1):
+    state = await get_state()
     try:
         return await app.state.film_service.get_films_list(page)
     except Exception as e:
@@ -145,6 +142,7 @@ async def get_films_list(page: int = 1):
     response_description="Informações customizadas sobre um filme"
 )
 async def get_film(film_id: int):
+    state = await get_state()
     try:
         return await app.state.film_service.get_film_enriched(film_id)
     except Exception as e:
@@ -161,6 +159,7 @@ async def get_film(film_id: int):
     response_description="Lista paginada de planetas"
 )
 async def get_planets_list(page: int = 1):
+    state = await get_state()
     try:
         return await app.state.planet_service.get_planets_list(page)
     except Exception as e:
@@ -176,6 +175,7 @@ async def get_planets_list(page: int = 1):
     response_description="Informações customizadas sobre um planeta"
 )
 async def get_planet(planet_id: int):
+    state = await get_state()
     try:
         return await app.state.planet_service.get_planet_enriched(planet_id)
     except Exception as e:
@@ -192,6 +192,7 @@ async def get_planet(planet_id: int):
     response_description="Lista paginada de espécies"
 )
 async def get_species_list(page: int = 1):
+    state = await get_state()
     try:
         return await app.state.specie_service.get_species_list(page)
     except Exception as e:
@@ -207,6 +208,7 @@ async def get_species_list(page: int = 1):
     response_description="Informações customizadas sobre uma espécie"
 )
 async def get_specie(specie_id: int):
+    state = await get_state()
     try:
         return await app.state.specie_service.get_specie_enriched(specie_id)
     except Exception as e:
@@ -223,6 +225,7 @@ async def get_specie(specie_id: int):
     response_description="Lista paginada de naves"
 )
 async def get_starships_list(page: int = 1):
+    state = await get_state()
     try:
         return await app.state.starship_service.get_starships_list(page)
     except Exception as e:
@@ -238,6 +241,7 @@ async def get_starships_list(page: int = 1):
     response_description="Informações customizadas sobre uma nave"
 )
 async def get_starship(starship_id: int):
+    state = await get_state()
     try:
         return await app.state.starship_service.get_starship_enriched(starship_id)
     except Exception as e:
@@ -254,6 +258,7 @@ async def get_starship(starship_id: int):
     response_description="Lista paginada de veículos"
 )
 async def get_vehicles_list(page: int = 1):
+    state = await get_state()
     try:
         return await app.state.vehicle_service.get_vehicles_list(page)
     except Exception as e:
@@ -269,6 +274,7 @@ async def get_vehicles_list(page: int = 1):
     response_description="Informações customizadas sobre um veículo"
 )
 async def get_vehicle(vehicle_id: int):
+    state = await get_state()
     try:
         return await app.state.vehicle_service.get_vehicle_enriched(vehicle_id)
     except Exception as e:
