@@ -1,6 +1,6 @@
 from datetime import date
 from pydantic import BaseModel, Field
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 class Film(BaseModel):
     title: str
@@ -33,5 +33,18 @@ class FilmResponse(BaseModel):
     release_date: date
     planets: List[PlanetSummary]
     statistics: Dict[str, int] = Field(description="Estatísticas gerais")
+
+class FilmListItem(BaseModel):
+    id: int
+    title: str
+    episode_id: int
+    director: str
+    release_date: date
+
+class FilmListResponse(BaseModel):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: List[FilmListItem]
 
 

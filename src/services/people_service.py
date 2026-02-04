@@ -1,5 +1,5 @@
 import asyncio
-from src.models.people import People, PeopleResponse, PlanetSummary, FilmSummary
+from src.models.people import People, PeopleResponse, PeopleListResponse, PeopleListItem, PlanetSummary, FilmSummary
 from src.services.swapi_client import SWAPIClient
 
 class PeopleService:
@@ -46,4 +46,28 @@ class PeopleService:
                 "total_starships": len(people.starships),
                 "total_vehicles": len(people.vehicles)
             }
+        )
+
+    async def get_people_list(self, page: int = 1) -> PeopleListResponse:
+        raw_data = await self.swapi_client.get("/people/", params={"page": page})
+        results = []
+
+        for person_data in raw_data['results']:
+            person = People(**person_data)
+            homeworld_id = self._extract_id(person.homeworld)
+            results.append(PeopleListItem(
+                id=self._extract_id(person.url),
+                name=person.name,
+                gender=person.gender,
+                birth_year=person.birth_year,
+                homeworld_id=homeworld_id,
+                height=person.height,
+                mass=person.mass
+            ))
+        
+        return PeopleListResponse(
+            count=raw_data['count'],
+            next=raw_data.get('next'),
+            previous=raw_data.get('previous'),
+            results=results
         )

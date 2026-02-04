@@ -64,13 +64,48 @@ async def root():
         "docs": "/docs",
         "health": "/health",
         "endpoints": {
-            "characters": "/people/{id}",
-            "planets": "/planets/{id}",
-            "films": "/films/{id}",
-            "starships": "/starships/{id}",
-            "vehicles": "vehicles/{id}"
+            "people": {
+                "list": "/people?page=1",
+                "detail": "/people/{id}"
+            },
+            "planets": {
+                "list": "/planets?page=1",
+                "detail": "/planets/{id}"
+            },
+            "films": {
+                "list": "/films?page=1",
+                "detail": "/films/{id}"
+            },
+            "species": {
+                "list": "/species?page=1",
+                "detail": "/species/{id}"
+            },
+            "starships": {
+                "list": "/starships?page=1",
+                "detail": "/starships/{id}"
+            },
+            "vehicles": {
+                "list": "/vehicles?page=1",
+                "detail": "/vehicles/{id}"
+            }
         }
     }
+
+##People
+@app.get(
+    "/people",
+    status_code=status.HTTP_200_OK,
+    summary="Lista de personagens",
+    response_description="Lista paginada de personagens"
+)
+async def get_people_list(page: int = 1):
+    try:
+        return await app.state.people_service.get_people_list(page)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Erro ao buscar lista de personagens"
+        )
 
 @app.get(
     "/people/{people_id}",
@@ -89,6 +124,21 @@ async def get_person(people_id: int):
     
 ##Filmes
 @app.get(
+    "/films",
+    status_code=status.HTTP_200_OK,
+    summary="Lista de filmes",
+    response_description="Lista paginada de filmes"
+)
+async def get_films_list(page: int = 1):
+    try:
+        return await app.state.film_service.get_films_list(page)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Erro ao buscar lista de filmes"
+        )
+
+@app.get(
     "/films/{film_id}",
     status_code=status.HTTP_200_OK,
     summary="Busca por filme",
@@ -104,6 +154,21 @@ async def get_film(film_id: int):
         )
     
 ##Planetas
+@app.get(
+    "/planets",
+    status_code=status.HTTP_200_OK,
+    summary="Lista de planetas",
+    response_description="Lista paginada de planetas"
+)
+async def get_planets_list(page: int = 1):
+    try:
+        return await app.state.planet_service.get_planets_list(page)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Erro ao buscar lista de planetas"
+        )
+
 @app.get(
     "/planets/{planet_id}",
     status_code=status.HTTP_200_OK,
@@ -121,6 +186,21 @@ async def get_planet(planet_id: int):
 
 ##Species
 @app.get(
+    "/species",
+    status_code=status.HTTP_200_OK,
+    summary="Lista de espécies",
+    response_description="Lista paginada de espécies"
+)
+async def get_species_list(page: int = 1):
+    try:
+        return await app.state.specie_service.get_species_list(page)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Erro ao buscar lista de espécies"
+        )
+
+@app.get(
     "/species/{specie_id}",
     status_code=status.HTTP_200_OK,
     summary="Busca por espécie",
@@ -137,6 +217,21 @@ async def get_specie(specie_id: int):
 
 ##Naves
 @app.get(
+    "/starships",
+    status_code=status.HTTP_200_OK,
+    summary="Lista de naves",
+    response_description="Lista paginada de naves"
+)
+async def get_starships_list(page: int = 1):
+    try:
+        return await app.state.starship_service.get_starships_list(page)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Erro ao buscar lista de naves"
+        )
+
+@app.get(
     "/starships/{starship_id}",
     status_code=status.HTTP_200_OK,
     summary="Busca por nave",
@@ -150,8 +245,23 @@ async def get_starship(starship_id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Nave de ID {starship_id} não encontrada"
         )
-    
+
 ##Veiculos
+@app.get(
+    "/vehicles",
+    status_code=status.HTTP_200_OK,
+    summary="Lista de veículos",
+    response_description="Lista paginada de veículos"
+)
+async def get_vehicles_list(page: int = 1):
+    try:
+        return await app.state.vehicle_service.get_vehicles_list(page)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Erro ao buscar lista de veículos"
+        )
+    
 @app.get(
     "/vehicles/{vehicle_id}",
     status_code=status.HTTP_200_OK,

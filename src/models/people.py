@@ -61,3 +61,35 @@ class PeopleResponse(BaseModel):
         except ValueError:
             return None
     
+class PeopleListItem(BaseModel):
+    id: int
+    name: str
+    gender: str
+    birth_year: str
+    homeworld_id: int
+    height: Optional[int] = Field(None, description="Altura em centímetros")
+    mass: Optional[float] = Field(None, description="Massa em quilogramas")
+
+    @field_validator('height', mode='before')
+    def parse_height(cls, v):
+        if v == 'unknown' or not v:
+            return None
+        try:
+            return int(v)
+        except ValueError:
+            return None
+
+    @field_validator('mass', mode='before')
+    def parse_mass(cls, v):
+        if v == 'unknown' or not v:
+            return None
+        try:
+            return float(v)
+        except ValueError:
+            return None
+
+class PeopleListResponse(BaseModel):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: List[PeopleListItem]

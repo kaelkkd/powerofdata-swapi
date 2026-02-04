@@ -95,3 +95,25 @@ class PlanetResponse(BaseModel):
             return float(v)
         except ValueError:
             return None
+
+class PlanetListItem(BaseModel):
+    id: int
+    name: str
+    climate: str
+    terrain: str
+    population: Optional[int] = Field(None, description="População do planeta")
+
+    @field_validator('population', mode='before')
+    def parse_population(cls, v):
+        if v == 'unknown' or not v:
+            return None
+        try:
+            return int(v)
+        except ValueError:
+            return None
+
+class PlanetListResponse(BaseModel):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: List[PlanetListItem]

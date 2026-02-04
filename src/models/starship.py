@@ -113,3 +113,16 @@ class StarshipResponse(BaseModel):
             return int(v)
         except ValueError:
             return None
+
+class StarshipListItem(BaseModel):
+    id: int
+    name: str
+    model: str
+    starship_class: str
+    manufacturer: str
+
+class StarshipListResponse(BaseModel):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: List[StarshipListItem]
