@@ -54,10 +54,11 @@ jobs:
           --entry-point=star_wars_api \
           --trigger-http \
           --allow-unauthenticated \
-          --memory=1024MB \
+          --memory=256MB \
+          --cpu=0.16
           --timeout=60s \
-          --max-instances=100 \
-          --min-instances=1 \
+          --max-instances=4 \
+          --min-instances=0 \
           --set-env-vars="ENVIRONMENT=production,LOG_LEVEL=INFO" \
           --service-account=${{ vars.GCP_SA_EMAIL }} \
           --project=${{ vars.GCP_PROJECT_ID }}
